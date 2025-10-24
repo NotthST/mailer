@@ -1,0 +1,29 @@
+
+import io, os, configparser, pandas as pd
+from office365.sharepoint.client_context import ClientContext
+from office365.sharepoint.files.file import File
+
+CFG = configparser.ConfigParser()
+CFG.read("config.ini")
+
+SP_SITE_URL = CFG.get("sharepoint", "SITE_URL", fallback="")
+SP_CSV_SERVER_RELATIVE = CFG.get("sharepoint", "CSV_SERVER_RELATIVE_PATH", fallback="")
+LOCAL_CSV_PATH = CFG.get("local", "CSV_PATH", fallback="")
+
+def _sp_ctx():
+    if not SP_SITE_URL:
+        raise RuntimeError("SharePoint SITE_URL not configured in config.ini")
+    return ClientContext(SP_SITE_URL)
+
+def _sp_download(path: str) -> bytes:
+    ctx = _sp_ctx()
+    f = ctx.web.get_file_by_server_relative_url(path)
+    return File.open_binary(ctx, f.serverRelativeUrl).content
+
+def load_distribution_df() -> pd.DataFrame:
+    if LOCAL_CSV_PATH and os.path.exists(LOCAL_CSV_PATH):
+        return pd.read_csv(LOCAL_CSV_PATH)
+    if SP_SITE_URL and SP_CSV_SERVER_RELATIVE:
+        content = _sp_download(SP_CSV_SERVER_RELATIVE)
+        return pd.read_csv(io.BytesIO(content))
+    return pd.DataFrame(columns=["Applications", "cc", "cci", "support mail"])
