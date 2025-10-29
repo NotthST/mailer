@@ -1,0 +1,30 @@
+# Generate intro sentence depending on communication type (comm_key)
+if comm_key == "day_before":
+    intro_line = (
+        f"This mail is to bring to your kind notice that a release "
+        f"will be performed on <b>{app_choice or ''}</b> tomorrow."
+    )
+elif comm_key == "t_minus_30":
+    intro_line = (
+        f"This mail is to bring to your kind notice that a release "
+        f"will start shortly in <b>{app_choice or ''}</b>."
+    )
+elif comm_key == "start":
+    intro_line = (
+        f"This mail is to bring to your kind notice that the release "
+        f"has now started in <b>{app_choice or ''}</b>."
+    )
+elif comm_key == "end":
+    intro_line = (
+        f"This mail is to bring to your kind notice that the release "
+        f"has been successfully completed in <b>{app_choice or ''}</b>."
+    )
+else:
+    intro_line = (
+        f"This mail is to bring to your kind notice that a release "
+        f"will start in <b>{app_choice or ''}</b>."
+    )
+
+
+
+<p style='margin:0 0 8px 0;'>{intro_line}</p>

@@ -13,7 +13,7 @@
                 <td valign="middle" style="width:140px;">
                   <!-- If you have a banner URL, pass it into {header_img} -->
                   <img src="{header_img}"
-                       alt="Crédit Agricole CIB"
+                       alt="aze"
                        width="120"
                        height="40"
                        style="display:block;width:120px;height:40px;">
