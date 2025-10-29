@@ -1,11 +1,1 @@
-#!/bin/bash
-
-# Define your array of search strings
-patterns=("password" "api_key" "secret_token" "confidential")
-
-# Loop through each pattern and search recursively
-for pattern in "${patterns[@]}"; do
-  echo "🔍 Searching for: '$pattern'"
-  grep -RInI --color=always "$pattern" . || echo "No matches for '$pattern'"
-  echo "------------------------------------"
-done
+patterns=("password" "api_key" "secret_token" "confidential"); for p in "${patterns[@]}"; do echo "🔍 Searching for: '$p'"; grep -RInI --color=always "$p" . || echo "No matches for '$p'"; echo "------------------------------------"; done
