@@ -1,100 +1,27 @@
-button handler :
+import os, sys, configparser
 
-from mailer import create_outlook_draft
-
-if st.button("Generate communication draft"):
-    # (keep your validations)
-    if not app_choice:
-        st.error("Please select an application."); st.stop()
-    if not full_ref.strip():
-        st.error("Please enter the full release reference."); st.stop()
-    if not date_dt:
-        st.error("Please set the Date (CET)."); st.stop()
-
-    create_outlook_draft(
-        to_list=rec_to,
-        cc_list=rec_cc,
-        bcc_list=rec_bcc,
-        subject=subject,
-        html_body=body_html,
-        from_address=from_mail_ui,   # ⬅️ NEW
-        # attachment_path=optional_path
-    )
-
-    st.success("Draft generated in Outlook.")
-
-# After you set rec_to / rec_cc / rec_bcc and support_mailbox
-default_from = first_smtp(rec_to) or support_mailbox or ""
-from_mail_ui = st.text_input("From (mailbox that will send this email)", value=default_from)
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev & for PyInstaller .exe"""
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
 
 
-app.py
+config = configparser.RawConfigParser()
+config.read(resource_path("config.ini"))
 
-import re
-
-def first_smtp(addr_list):
-    """Return first SMTP address from list (handles 'Name <x@y>' or raw)."""
-    for raw in addr_list or []:
-        if not raw:
-            continue
-        m = re.search(r"<([^>]+@[^>]+)>", str(raw))
-        if m:
-            return m.group(1).strip()
-        if "@" in str(raw):
-            return str(raw).strip()
-    return ""
+XLSX_PATH = config.get("local", "XLSX_PATH", fallback="").strip()
+if XLSX_PATH and not os.path.isabs(XLSX_PATH):
+    XLSX_PATH = resource_path(XLSX_PATH)
 
 
+----
 
-
-# mailer.py
-import os
-import pythoncom
-import win32com.client as win32
-
-
-def create_outlook_draft(
-    to_list,
-    cc_list,
-    bcc_list,
-    subject,
-    html_body,
-    from_address=None,         # ⬅️ NEW
-    attachment_path=None,
-):
-    """
-    Create and display an Outlook draft.
-    If from_address is provided, sends 'on behalf of' / 'send as' that mailbox.
-    """
-    # Streamlit runs in worker threads -> initialize COM in this thread
-    pythoncom.CoInitialize()
-    try:
-        outlook = win32.Dispatch("Outlook.Application")
-        mail = outlook.CreateItem(0)  # 0 = olMailItem
-
-        # Recipients
-        mail.To = ";".join([x for x in (to_list or []) if x])
-        mail.CC = ";".join([x for x in (cc_list or []) if x])
-        mail.BCC = ";".join([x for x in (bcc_list or []) if x])
-
-        # Subject & body
-        mail.Subject = subject
-        mail.HTMLBody = html_body
-
-        # ⬇️ NEW: set the From mailbox (requires SendAs / SendOnBehalf permissions)
-        if from_address:
-            # Either works; keep the simple property first
-            try:
-                mail.SentOnBehalfOfName = from_address
-            except Exception:
-                # Fallback for some Outlook builds
-                mail._oleobj_.Invoke(*(64209, 0, 8, 0, from_address))  # SentOnBehalfOfName
-
-        # Optional attachment
-        if attachment_path and os.path.exists(attachment_path):
-            mail.Attachments.Add(Source=attachment_path)
-
-        mail.Save()
-        mail.Display()  # open as draft
-    finally:
-        pythoncom.CoUninitialize()
+pyinstaller ^
+  --name "ReleaseComms" ^
+  --onefile ^
+  --noconsole ^
+  --add-data "config.ini;." ^
+  app.py
