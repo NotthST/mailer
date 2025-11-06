@@ -1,27 +1,8 @@
-import os, sys, configparser
-
-def resource_path(relative_path):
-    """Get absolute path to resource, works for dev & for PyInstaller .exe"""
-    if hasattr(sys, '_MEIPASS'):
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(base_path, relative_path)
-
-
-config = configparser.RawConfigParser()
-config.read(resource_path("config.ini"))
-
-XLSX_PATH = config.get("local", "XLSX_PATH", fallback="").strip()
-if XLSX_PATH and not os.path.isabs(XLSX_PATH):
-    XLSX_PATH = resource_path(XLSX_PATH)
-
-
-----
-
 pyinstaller ^
   --name "ReleaseComms" ^
   --onefile ^
   --noconsole ^
+  --exclude-module matplotlib ^
+  --exclude-module matplotlib.backends ^
   --add-data "config.ini;." ^
   app.py
