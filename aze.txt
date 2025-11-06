@@ -1,8 +1,9 @@
 pyinstaller ^
-  --name "ReleaseComms" ^
+  --name ReleaseComms ^
   --onefile ^
   --noconsole ^
-  --exclude-module matplotlib ^
-  --exclude-module matplotlib.backends ^
+  --collect-all numpy ^
+  --collect-all pandas ^
   --add-data "config.ini;." ^
+  --add-data "ListOfDistribution.xlsx;." ^
   app.py
