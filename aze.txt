@@ -1,20 +1,4 @@
-python -m pip install --upgrade pip
-
-# Remove conflicting bits (safe)
-python -m pip uninstall -y matplotlib pillow packaging
-
-# Install the exact, compatible set
-python -m pip install ^
-  "numpy==1.26.4" ^
-  "pandas==2.1.3" ^
-  "openpyxl==3.1.2" ^
-  "pillow==10.4.0" ^           # (<11 for Streamlit 1.37.1)
-  "packaging==24.2" ^          # (<25 for Streamlit 1.37.1)
-  "pyinstaller==6.10.0" ^
-  "pywin32==306" ^
-  "office365-REST-Python-Client==2.5.12" ^
-  "streamlit==1.37.1"
-
+python -m pip install --upgrade pip && python -m pip uninstall -y matplotlib pillow packaging && python -m pip install "numpy==1.26.4" "pandas==2.1.3" "openpyxl==3.1.2" "pillow==10.4.0" "packaging==24.2" "pyinstaller==6.10.0" "pywin32==306" "office365-REST-Python-Client==2.5.12" "streamlit==1.37.1"
 
 python - << 'PY'
 import numpy, pandas, PIL, packaging, streamlit, openpyxl
@@ -26,29 +10,10 @@ print("streamlit", streamlit.__version__)
 import openpyxl; print("openpyxl", openpyxl.__version__)
 PY
 
-rmdir /s /q build dist 2>$null
-del ReleaseComms.spec 2>$null
+rmdir /s /q build dist 2>$null && del ReleaseComms.spec 2>$null && pyinstaller --name ReleaseComms --onedir --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --add-data "config.ini;." app.py
 
-pyinstaller ^
-  --name ReleaseComms ^
-  --onedir ^
-  --noconsole ^
-  --exclude-module matplotlib ^
-  --exclude-module matplotlib.backends ^
-  --collect-all numpy ^
-  --collect-all pandas ^
-  --add-data "config.ini;." ^
-  app.py
+rmdir /s /q build dist 2>$null && pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." app.py
 
-rmdir /s /q build dist 2>$null
-pyinstaller ^
-  --name ReleaseComms ^
-  --onefile ^
-  --noconsole ^
-  --exclude-module matplotlib ^
-  --exclude-module matplotlib.backends ^
-  --collect-all numpy ^
-  --collect-all pandas ^
-  --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" ^
-  --add-data "config.ini;." ^
-  app.py
+rmdir /s /q build dist 2>$null && pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." app.py
+
+Remove-Item "$env:LOCALAPPDATA\Temp\_MEI*" -Force -Recurse -ErrorAction SilentlyContinue
