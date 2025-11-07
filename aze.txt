@@ -17,3 +17,10 @@ rmdir /s /q build dist 2>$null && pyinstaller --name ReleaseComms --onefile --no
 rmdir /s /q build dist 2>$null && pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." app.py
 
 Remove-Item "$env:LOCALAPPDATA\Temp\_MEI*" -Force -Recurse -ErrorAction SilentlyContinue
+
+
+pyinstaller --name ReleaseComms --onedir --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --add-data "config.ini;." --add-data "ListOfDistribution.xlsx;." app.py
+
+pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." --add-data "ListOfDistribution.xlsx;." app.py
+
+Remove-Item "$env:LOCALAPPDATA\Temp\_MEI*" -Force -Recurse -ErrorAction SilentlyContinue
