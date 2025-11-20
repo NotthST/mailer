@@ -91,3 +91,5 @@
 (mapfile -t p < SesameServiceList; for i in $(printf "%s\n" "${p[@]}" | sort -u); do if ! grep -Rql -- "$i" .; then echo "${i#FEE0}"; fi; done) > file.txt
 
 (for i in $(printf "%s\n" "${patterns[@]}" | sort -u); do if ! grep -Rql -- "$i" .; then echo "${i#FEE0}"; fi; done) > file.txt
+
+(for i in $(printf "%s\n" "${patterns[@]}" | sort -u); do if ! grep -Rql -- "$i" .; then echo "${i/FEE0/,}"; fi; done) > file.txt
