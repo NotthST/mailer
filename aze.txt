@@ -44,3 +44,9 @@ rmdir /s /q build dist 2>$null && del ReleaseComms.spec 2>$null && pyinstaller -
 
     done
 ) > file.txt
+
+
+
+dir -Recurse *.* |
+    Select-String -Pattern "112" |
+    Select-Object -Unique Path, LineNumber, Line
