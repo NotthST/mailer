@@ -3,11 +3,11 @@ import sys
 
 # ===== CONFIGURATION =====
 # Excel column letters
-ID_COL_LETTER = "R"       # citmid
-AMOUNT_COL_LETTER = "H"   # citmam
+ID_COL_LETTER = "R"       # citmid (ID)
+AMOUNT_COL_LETTER = "H"   # citmam (amount)
 
-HAS_HEADER = True         # Set to False if there is NO header row
-DELIMITER = ","           # Change to ";" if your CSVs are semicolon-separated
+HAS_HEADER = True         # Set to False if there is NO header line
+DELIMITER = ";"           # IMPORTANT: Excel in FR/Europe usually uses ';'
 
 
 def col_letter_to_index(letter: str) -> int:
@@ -26,6 +26,7 @@ def col_letter_to_index(letter: str) -> int:
 
 ID_IDX = col_letter_to_index(ID_COL_LETTER)
 AMOUNT_IDX = col_letter_to_index(AMOUNT_COL_LETTER)
+MAX_IDX = max(ID_IDX, AMOUNT_IDX)
 
 
 def load_csv(path: str) -> dict:
@@ -35,21 +36,25 @@ def load_csv(path: str) -> dict:
     """
     data = {}
 
-    # Excel on Windows usually saves as cp1252
-    with open(path, newline="", encoding="cp1252") as f:
+    # Excel on Windows usually = cp1252
+    with open(path, newline="", encoding="cp1252", errors="replace") as f:
         reader = csv.reader(f, delimiter=DELIMITER)
 
         if HAS_HEADER:
-            next(reader, None)  # skip header
+            next(reader, None)  # skip header line
 
         start_row = 2 if HAS_HEADER else 1
         for row_num, row in enumerate(reader, start=start_row):
             if not row:
                 continue
 
-            if len(row) <= max(ID_IDX, AMOUNT_IDX):
+            # SAFETY: never index a short row
+            if len(row) <= MAX_IDX:
+                # Uncomment this if you want less spam:
+                # if row_num <= 20 or row_num % 1000 == 0:
                 print(
-                    f"Warning: row {row_num} in {path} has not enough columns, skipping.",
+                    f"Warning: row {row_num} in {path} has not enough columns "
+                    f"(len={len(row)}), skipping.",
                     file=sys.stderr,
                 )
                 continue
@@ -100,7 +105,7 @@ def compare_files(file1: str, file2: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python compare_citmam.py file1.csv file2.csv")
+        print("Usage: python import_csv.py file1.csv file2.csv")
         sys.exit(1)
 
     file1 = sys.argv[1]
