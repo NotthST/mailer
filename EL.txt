@@ -1,93 +1,12 @@
-import csv
-import sys
+# Force Excel to show the raw values EXACTLY as they appear
+def excel_text(v):
+    if v == "":
+        return ""
+    return f'="{v}"'   # Excel-safe text literal
 
-# ===== CONFIGURATION =====
-ID_COL_LETTER = "R"       # citmid (ID)
-AMOUNT_COL_LETTER = "H"   # citmam (amount)
-
-HAS_HEADER = True
-DELIMITER = ";"           # IMPORTANT: Excel usually uses ";" in EU/FR
-
-
-def col_letter_to_index(letter: str) -> int:
-    letter = letter.strip().upper()
-    result = 0
-    for ch in letter:
-        result = result * 26 + (ord(ch) - ord("A") + 1)
-    return result - 1
-
-
-ID_IDX = col_letter_to_index(ID_COL_LETTER)
-AMOUNT_IDX = col_letter_to_index(AMOUNT_COL_LETTER)
-MAX_IDX = max(ID_IDX, AMOUNT_IDX)
-
-
-def load_csv(path: str) -> dict:
-    data = {}
-    with open(path, newline="", encoding="cp1252", errors="replace") as f:
-        reader = csv.reader(f, delimiter=DELIMITER)
-
-        if HAS_HEADER:
-            next(reader, None)
-
-        start_row = 2 if HAS_HEADER else 1
-        for row_num, row in enumerate(reader, start=start_row):
-
-            if len(row) <= MAX_IDX:
-                continue
-
-            citmid = row[ID_IDX].strip()
-            citmam = row[AMOUNT_IDX].strip()
-
-            if not citmid:
-                continue
-
-            if citmid not in data:
-                data[citmid] = citmam
-
-    return data
-
-
-def compare_files(file1: str, file2: str):
-    data1 = load_csv(file1)
-    data2 = load_csv(file2)
-
-    all_ids = sorted(set(data1.keys()) | set(data2.keys()))
-
-    output_rows = []
-
-    for citmid in all_ids:
-        in_1 = citmid in data1
-        in_2 = citmid in data2
-
-        v1 = data1.get(citmid, "")
-        v2 = data2.get(citmid, "")
-
-        if in_1 and in_2:
-            if v1 == v2:
-                status = "SAME"
-            else:
-                status = "DIFFERENT"
-        elif in_1:
-            status = "ONLY_IN_FILE1"
-        else:
-            status = "ONLY_IN_FILE2"
-
-        output_rows.append([citmid, status, v1, v2])
-
-    # ===== WRITE OUTPUT CSV =====
-    with open("comparison_result.csv", "w", newline="", encoding="utf-8") as out:
-        writer = csv.writer(out, delimiter=";")
-        writer.writerow(["citmid", "status", "value_file1", "value_file2"])
-        writer.writerows(output_rows)
-
-    print("✔ Comparison completed.")
-    print("✔ Results saved to: comparison_result.csv")
-
-
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python import_csv.py file1.csv file2.csv")
-        sys.exit(1)
-
-    compare_files(sys.argv[1], sys.argv[2])
+output_rows.append([
+    citmid,
+    status,
+    excel_text(raw1),
+    excel_text(raw2)
+])
