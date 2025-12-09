@@ -1,52 +1,77 @@
-python -m pip install --upgrade pip && python -m pip uninstall -y matplotlib pillow packaging && python -m pip install "numpy==1.26.4" "pandas==2.1.3" "openpyxl==3.1.2" "pillow==10.4.0" "packaging==24.2" "pyinstaller==6.10.0" "pywin32==306" "office365-REST-Python-Client==2.5.12" "streamlit==1.37.1"
-
-python - << 'PY'
-import numpy, pandas, PIL, packaging, streamlit, openpyxl
-print("numpy", numpy.__version__)
-print("pandas", pandas.__version__)
-print("Pillow", PIL.__version__)
-import packaging as pkg; print("packaging", pkg.__version__)
-print("streamlit", streamlit.__version__)
-import openpyxl; print("openpyxl", openpyxl.__version__)
-PY
-
-rmdir /s /q build dist 2>$null && del ReleaseComms.spec 2>$null && pyinstaller --name ReleaseComms --onedir --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --add-data "config.ini;." app.py
-
-rmdir /s /q build dist 2>$null && pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." app.py
-
-rmdir /s /q build dist 2>$null && pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." app.py
-
-Remove-Item "$env:LOCALAPPDATA\Temp\_MEI*" -Force -Recurse -ErrorAction SilentlyContinue
+import csv
+import sys
 
 
-pyinstaller --name ReleaseComms --onedir --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --add-data "config.ini;." --add-data "ListOfDistribution.xlsx;." app.py
+def load_csv_by_citmid(path):
+    """
+    Load a CSV file and return a dict:
+        { citmid_value: citmcrdb_value }
+    """
+    data = {}
 
-pyinstaller --name ReleaseComms --onefile --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --runtime-tmpdir "%LOCALAPPDATA%\PyAppTemp\ReleaseComms" --add-data "config.ini;." --add-data "ListOfDistribution.xlsx;." app.py
+    with open(path, newline='', encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
 
-Remove-Item "$env:LOCALAPPDATA\Temp\_MEI*" -Force -Recurse -ErrorAction SilentlyContinue
-*
+        # Make sure the needed columns exist
+        required_columns = {"citmid", "citmcrdb"}
+        missing = required_columns - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(f"{path} is missing columns: {', '.join(missing)}")
 
-rmdir /s /q build dist 2>$null && del ReleaseComms.spec 2>$null && pyinstaller --name ReleaseComms --onedir --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all numpy --collect-all pandas --add-data "config.ini;." --add-data "ListOfDistribution.xlsx;." --copy-metadata streamlit --copy-metadata click --copy-metadata watchdog --copy-metadata protobuf --copy-metadata packaging app.py
+        for row in reader:
+            citmid = (row["citmid"] or "").strip()
+            citmcrdb = (row["citmcrdb"] or "").strip()
 
-(
-    # Read patterns, remove duplicates
-    mapfile -t patterns < SesameServiceList
-    for p in $(printf "%s\n" "${patterns[@]}" | sort -u); do
+            if not citmid:
+                # skip rows without an ID
+                continue
 
-        # If pattern NOT found
-        if ! grep -Rql -- "$p" .; then
+            if citmid in data:
+                # you can change this to overwrite if you want
+                print(
+                    f"Warning: duplicate citmid '{citmid}' in {path}, keeping first value.",
+                    file=sys.stderr,
+                )
+                continue
 
-            # Remove FEE0 prefix
-            clean="${p#FEE0}"
+            data[citmid] = citmcrdb
 
-            echo "$clean"
-        fi
-
-    done
-) > file.txt
-
+    return data
 
 
-dir -Recurse *.* |
-    Select-String -Pattern "112" |
-    Select-Object -Unique Path, LineNumber, Line
+def compare_files(file1, file2):
+    data1 = load_csv_by_citmid(file1)
+    data2 = load_csv_by_citmid(file2)
+
+    all_citmids = sorted(set(data1.keys()) | set(data2.keys()))
+
+    for citmid in all_citmids:
+        in_1 = citmid in data1
+        in_2 = citmid in data2
+
+        if in_1 and in_2:
+            v1 = data1[citmid]
+            v2 = data2[citmid]
+
+            if v1 == v2:
+                print(f"{citmid}: SAME (citmcrdb = {v1})")
+            else:
+                print(
+                    f"{citmid}: DIFFERENT "
+                    f"(citmcrdb in {file1} = {v1!r}, in {file2} = {v2!r})"
+                )
+        elif in_1 and not in_2:
+            print(f"{citmid}: only exists in {file1}")
+        elif in_2 and not in_1:
+            print(f"{citmid}: only exists in {file2}")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python compare_csv.py file1.csv file2.csv")
+        sys.exit(1)
+
+    file1 = sys.argv[1]
+    file2 = sys.argv[2]
+
+    compare_files(file1, file2)
