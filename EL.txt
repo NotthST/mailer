@@ -2,26 +2,19 @@ import csv
 import sys
 
 # ===== CONFIGURATION =====
-# Excel column letters
 ID_COL_LETTER = "R"       # citmid (ID)
 AMOUNT_COL_LETTER = "H"   # citmam (amount)
 
-HAS_HEADER = True         # Set to False if there is NO header line
-DELIMITER = ";"           # IMPORTANT: Excel in FR/Europe usually uses ';'
+HAS_HEADER = True
+DELIMITER = ";"           # IMPORTANT: Excel usually uses ";" in EU/FR
 
 
 def col_letter_to_index(letter: str) -> int:
-    """
-    Convert Excel-style column letter (A, B, ..., Z, AA, AB, ...) to 0-based index.
-    Example: A -> 0, B -> 1, H -> 7, R -> 17
-    """
     letter = letter.strip().upper()
     result = 0
     for ch in letter:
-        if not ("A" <= ch <= "Z"):
-            raise ValueError(f"Invalid column letter: {letter}")
         result = result * 26 + (ord(ch) - ord("A") + 1)
-    return result - 1  # 0-based index
+    return result - 1
 
 
 ID_IDX = col_letter_to_index(ID_COL_LETTER)
@@ -30,33 +23,17 @@ MAX_IDX = max(ID_IDX, AMOUNT_IDX)
 
 
 def load_csv(path: str) -> dict:
-    """
-    Load a CSV into a dict: { citmid: citmam }
-    using fixed column indices.
-    """
     data = {}
-
-    # Excel on Windows usually = cp1252
     with open(path, newline="", encoding="cp1252", errors="replace") as f:
         reader = csv.reader(f, delimiter=DELIMITER)
 
         if HAS_HEADER:
-            next(reader, None)  # skip header line
+            next(reader, None)
 
         start_row = 2 if HAS_HEADER else 1
         for row_num, row in enumerate(reader, start=start_row):
-            if not row:
-                continue
 
-            # SAFETY: never index a short row
             if len(row) <= MAX_IDX:
-                # Uncomment this if you want less spam:
-                # if row_num <= 20 or row_num % 1000 == 0:
-                print(
-                    f"Warning: row {row_num} in {path} has not enough columns "
-                    f"(len={len(row)}), skipping.",
-                    file=sys.stderr,
-                )
                 continue
 
             citmid = row[ID_IDX].strip()
@@ -65,14 +42,8 @@ def load_csv(path: str) -> dict:
             if not citmid:
                 continue
 
-            if citmid in data:
-                print(
-                    f"Warning: duplicate citmid '{citmid}' in {path}, keeping first value.",
-                    file=sys.stderr,
-                )
-                continue
-
-            data[citmid] = citmam
+            if citmid not in data:
+                data[citmid] = citmam
 
     return data
 
@@ -83,24 +54,35 @@ def compare_files(file1: str, file2: str):
 
     all_ids = sorted(set(data1.keys()) | set(data2.keys()))
 
+    output_rows = []
+
     for citmid in all_ids:
         in_1 = citmid in data1
         in_2 = citmid in data2
 
+        v1 = data1.get(citmid, "")
+        v2 = data2.get(citmid, "")
+
         if in_1 and in_2:
-            v1 = data1[citmid]
-            v2 = data2[citmid]
             if v1 == v2:
-                print(f"{citmid}: SAME (citmam = {v1})")
+                status = "SAME"
             else:
-                print(
-                    f"{citmid}: DIFFERENT "
-                    f"(citmam in {file1} = {v1!r}, in {file2} = {v2!r})"
-                )
-        elif in_1 and not in_2:
-            print(f"{citmid}: only exists in {file1}")
-        elif in_2 and not in_1:
-            print(f"{citmid}: only exists in {file2}")
+                status = "DIFFERENT"
+        elif in_1:
+            status = "ONLY_IN_FILE1"
+        else:
+            status = "ONLY_IN_FILE2"
+
+        output_rows.append([citmid, status, v1, v2])
+
+    # ===== WRITE OUTPUT CSV =====
+    with open("comparison_result.csv", "w", newline="", encoding="utf-8") as out:
+        writer = csv.writer(out, delimiter=";")
+        writer.writerow(["citmid", "status", "value_file1", "value_file2"])
+        writer.writerows(output_rows)
+
+    print("✔ Comparison completed.")
+    print("✔ Results saved to: comparison_result.csv")
 
 
 if __name__ == "__main__":
@@ -108,7 +90,4 @@ if __name__ == "__main__":
         print("Usage: python import_csv.py file1.csv file2.csv")
         sys.exit(1)
 
-    file1 = sys.argv[1]
-    file2 = sys.argv[2]
-
-    compare_files(file1, file2)
+    compare_files(sys.argv[1], sys.argv[2])
