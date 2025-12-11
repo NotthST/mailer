@@ -60,10 +60,16 @@ REPO_MAX_IDX = max(REPO_ID_IDX, REPO_AMOUNT_IDX, REPO_ACCOUNT_IDX, REPO_REF2_IDX
 def parse_amount(value: str):
     """
     Parse various number formats into Decimal.
-    Example:
-      '14511.44' → Decimal("14511.44")
-      '14.511,44' → Decimal("14511.44")
-      '100,000' → Decimal("100000")
+
+    Examples that should be EQUAL:
+      '1447'    -> 1447
+      '1,447'   -> 1447   (comma as thousands separator)
+
+    Other examples:
+      '14511.44'   -> 14511.44
+      '14.511,44'  -> 14511.44
+      '14511,44'   -> 14511.44
+      '100,000'    -> 100000
     """
     if value is None:
         return None
@@ -71,20 +77,33 @@ def parse_amount(value: str):
     if not s:
         return None
 
-    # remove thousand separators/spaces
+    # remove spaces and apostrophes
     s = s.replace(" ", "").replace("'", "")
 
-    # If both separators exist, detect decimal separator
+    # Case 1: both comma and dot present
     if "," in s and "." in s:
         last_comma = s.rfind(",")
         last_dot = s.rfind(".")
         if last_comma > last_dot:
+            # decimal = ',', dots = thousands
             s = s.replace(".", "")
             s = s.replace(",", ".")
         else:
+            # decimal = '.', commas = thousands
             s = s.replace(",", "")
     elif "," in s:
-        s = s.replace(",", ".")
+        # Only comma present. Decide if it's thousands or decimal.
+        last_comma = s.rfind(",")
+        decimal_part = s[last_comma + 1:]
+
+        # If exactly 3 digits after comma and only 1 comma -> thousands separator
+        if decimal_part.isdigit() and len(decimal_part) == 3 and s.count(",") == 1:
+            # e.g. "1,447" -> "1447"
+            s = s.replace(",", "")
+        else:
+            # treat comma as decimal separator
+            s = s.replace(",", ".")
+    # elif only dot -> already decimal format, leave as-is
 
     try:
         return Decimal(s)
@@ -113,7 +132,7 @@ def load_file1(path: str):
             FILE1_REF2_COL,
             FILE1_ACCOUNT_COL,
         }
-        missing = required - set(reader.fieldnames)
+        missing = required - set(reader.fieldnames or [])
         if missing:
             raise ValueError(f"Missing required columns in file1: {missing}")
 
@@ -131,7 +150,7 @@ def load_file1(path: str):
         for r in rows:
             status = (r.get(FILE1_STATUS_COL) or "").strip()
             score = STATUS_PRIORITY.get(status, 0)
-
+            # keep last with same score
             if score >= best_score:
                 best_score = score
                 best_row = r
@@ -229,11 +248,12 @@ def compare_file1_with_repo(file1_path: str, repo_folder: str):
                 found.append((fname, mapping[cid]))
 
         if not found:
+            # no match in any repo file
             results.append([
                 cid, f1["status"],
-                f1_amount_raw, "NOT_FOUND", "", "NOT_FOUND",
-                f1_account, "NOT_FOUND", "", "NOT_FOUND",
-                f1_ref2, "NOT_FOUND", "", "NOT_FOUND",
+                f1_amount_raw, "NOT_FOUND", 0, "NOT_FOUND",
+                f1_account, "NOT_FOUND", 0, "NOT_FOUND",
+                f1_ref2, "NOT_FOUND", 0, "NOT_FOUND",
                 ""
             ])
             continue
@@ -242,13 +262,17 @@ def compare_file1_with_repo(file1_path: str, repo_folder: str):
         amount_values = []
         amount_sources = []
         account_values = []
+        account_sources = []
         ref2_values = []
+        ref2_sources = []
 
-        # Add file1
+        # Add file1 as a "source"
         amount_values.append(f1_amount_num)
         amount_sources.append(f"file1:{f1_amount_raw}")
         account_values.append(f1_account)
+        account_sources.append(f"file1:{f1_account}")
         ref2_values.append(f1_ref2)
+        ref2_sources.append(f"file1:{f1_ref2}")
 
         files_matched = []
 
@@ -257,20 +281,35 @@ def compare_file1_with_repo(file1_path: str, repo_folder: str):
 
             amount_values.append(entry["amount_num"])
             amount_sources.append(f"{fname}:{entry['amount_raw']}")
-            account_values.append(entry["account"])
-            ref2_values.append(entry["ref2"])
 
-        # Determine differences
+            account_values.append(entry["account"])
+            account_sources.append(f"{fname}:{entry['account']}")
+
+            ref2_values.append(entry["ref2"])
+            ref2_sources.append(f"{fname}:{entry['ref2']}")
+
+        # Amount status
         non_null_amounts = [v for v in amount_values if v is not None]
-        amount_status = "SAME" if len(set(non_null_amounts)) <= 1 else "DIFFERENT"
+        if len(non_null_amounts) <= 1:
+            amount_status = "SAME"
+        else:
+            amount_status = "SAME" if len(set(non_null_amounts)) == 1 else "DIFFERENT"
         amount_distinct = len(set(non_null_amounts))
 
+        # Account status (text)
         non_empty_acc = [v for v in account_values if v]
-        account_status = "SAME" if len(set(non_empty_acc)) <= 1 else "DIFFERENT"
+        if len(non_empty_acc) <= 1:
+            account_status = "SAME"
+        else:
+            account_status = "SAME" if len(set(non_empty_acc)) == 1 else "DIFFERENT"
         account_distinct = len(set(non_empty_acc))
 
+        # Ref2 status (text)
         non_empty_ref2 = [v for v in ref2_values if v]
-        ref2_status = "SAME" if len(set(non_empty_ref2)) <= 1 else "DIFFERENT"
+        if len(non_empty_ref2) <= 1:
+            ref2_status = "SAME"
+        else:
+            ref2_status = "SAME" if len(set(non_empty_ref2)) == 1 else "DIFFERENT"
         ref2_distinct = len(set(non_empty_ref2))
 
         results.append([
@@ -280,11 +319,11 @@ def compare_file1_with_repo(file1_path: str, repo_folder: str):
             amount_distinct,
             amount_status,
             f1_account,
-            " | ".join(f"{fname}:{acc}" for fname, acc in zip(files_matched, account_values[1:])),
+            " | ".join(account_sources),
             account_distinct,
             account_status,
             f1_ref2,
-            " | ".join(f"{fname}:{rf}" for fname, rf in zip(files_matched, ref2_values[1:])),
+            " | ".join(ref2_sources),
             ref2_distinct,
             ref2_status,
             ", ".join(files_matched),
@@ -303,7 +342,7 @@ def compare_file1_with_repo(file1_path: str, repo_folder: str):
         ])
         writer.writerows(results)
 
-    print(f"✔ Comparison completed.")
+    print("✔ Comparison completed.")
     print(f"✔ Results saved in: {out_file}")
 
 
