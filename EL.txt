@@ -1,1 +1,1 @@
-qsa
+find /path/to/logs -type f -exec grep -iH "error" {} + | grep "$(date '+%Y-%m-%d')"
