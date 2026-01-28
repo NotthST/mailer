@@ -5,3 +5,34 @@ rmdir /s /q build dist 2>nul && del /q ReleaseComms.spec 2>nul
 
 
 pyinstaller --name ReleaseComms --onedir --noconsole --exclude-module matplotlib --exclude-module matplotlib.backends --collect-all streamlit --copy-metadata streamlit --copy-metadata pandas --copy-metadata numpy --hidden-import importlib_metadata --add-data "config.ini;." --add-data "ListOfDistribution.xlsx;." app.py
+
+
+
+# launcher.py
+import os
+import sys
+import subprocess
+
+def main():
+    # When frozen, sys._MEIPASS is the extracted folder with bundled files
+    if getattr(sys, "frozen", False):
+        base_dir = sys._MEIPASS
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    app_path = os.path.join(base_dir, "app.py")
+
+    # Use the same python that runs this process
+    # and start streamlit module explicitly (more reliable than "streamlit" command)
+    cmd = [
+        sys.executable, "-m", "streamlit", "run", app_path,
+        "--server.headless=true",
+        "--server.port=8501",
+        "--browser.gatherUsageStats=false",
+    ]
+
+    subprocess.Popen(cmd, cwd=base_dir)
+
+if __name__ == "__main__":
+    main()
+
