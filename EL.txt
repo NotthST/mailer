@@ -1,37 +1,9 @@
-Ok
+Bonjour [Prénom],
 
-Bonjour [Prénom],  
+Je viens d’être informé que mon examen civique de demain a été avancé de 16h30 à 13h30.
 
-Merci encore d’avoir pris le temps de partager vos retours aujourd’hui. Après réflexion, je souhaitais faire une synthèse des points évoqués afin de m’assurer que je les ai bien compris.  
+Comme le trajet est d’environ 2h30, je devrais partir plus tôt. Je pensais travailler depuis le site d’Alenia le matin, car c’est plus proche du centre d’examen, comme ça je peux travailler et partir à temps.
 
-Je tiens également à m’excuser si j’ai pu paraître défensif à certains moments durant l’échange. Ce n’était pas mon intention ; je souhaitais simplement apporter du contexte, mais je comprends l’importance d’accueillir pleinement le feedback.  
+Désolé pour le court délai, je viens juste d’avoir l’info.
 
-Points discutés :  
-
-- Mon heure d’arrivée (autour de 9h20–9h30) et mon départ à 18h peuvent donner l’impression d’un engagement limité.  
-- Mes pauses cigarettes peuvent me rendre ponctuellement indisponible.  
-- Ma communication avec l’équipe dev doit être plus claire, notamment pour confirmer une compréhension commune des sujets.  
-- Je peux donner l’impression de travailler de manière trop indépendante.  
-- Il peut exister un décalage entre la relation que je pense avoir avec l’équipe et la perception réelle de mon positionnement.  
-- Le fait de prendre plusieurs tickets simultanément a impacté la priorisation et la visibilité.  
-- Le sujet transverse delete/compress nécessite une organisation et un suivi plus structurés.  
-- Ma posture et mon attitude peuvent parfois paraître distantes ou moins engagées que je ne le souhaiterais.  
-
-Actions que je vais mettre en place :  
-
-- Arriver à 9h de manière régulière afin d’améliorer ma ponctualité et ma présence.  
-- M’assurer de bien comprendre le problème et le résultat attendu avant de démarrer un ticket.  
-- Reformuler si nécessaire les échanges avec les dev pour valider l’alignement.  
-- Partager des points d’avancement courts pendant le traitement des incidents au lieu de travailler silencieusement jusqu’à la résolution.  
-- Signaler plus tôt lorsque la charge devient difficile à absorber.  
-- Impliquer davantage l’équipe sur les incidents complexes au lieu de les traiter seul.  
-- Réorganiser le sujet delete/compress en étapes claires et aligner les priorités.  
-- Mieux encadrer mes pauses afin de ne pas impacter ma disponibilité opérationnelle.  
-- Mettre à profit mes compétences techniques pour automatiser certaines vérifications récurrentes et documenter les démarches d’investigation afin d’aider l’équipe à résoudre plus efficacement des incidents similaires.  
-
-Mon objectif est de continuer à progresser, renforcer la collaboration au sein de l’équipe et augmenter mon impact global.  
-
-N’hésitez pas à me dire si cette synthèse ne reflète pas fidèlement notre échange.  
-
-Bien cordialement,  
-[Votre Nom]
+Dis-moi si ça te convient
